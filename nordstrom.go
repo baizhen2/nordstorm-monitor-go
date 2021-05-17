@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strings"
+	"time"
 )
 
 func main() {
-	json1 := GetRequest("https://www.nordstromrack.com/api/search2/catalog/search?query=robot")
-
-	fmt.Println(GetNumItems(json1))
+	Monitor("robot")
 }
 
 type nordstrom_data struct {
@@ -46,4 +46,27 @@ func GetNumItems(body string) int {
 	}
 
 	return data.Search_cluster.Num_found
+}
+
+func Monitor(request string) {
+	monitor := true
+
+	default_endpoint := "https://www.nordstromrack.com/api/search2/catalog/search?query="
+
+	query := strings.Replace(request, " ", "+", -1)
+
+	full_query := default_endpoint + query
+
+	for {
+
+		json1 := GetRequest(full_query)
+
+		fmt.Println(GetNumItems(json1))
+
+		time.Sleep(5000 * time.Millisecond)
+
+		if monitor == false {
+			break
+		}
+	}
 }
