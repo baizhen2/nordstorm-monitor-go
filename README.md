@@ -1,0 +1,1 @@
+A NordstromRack product monitor in golang
