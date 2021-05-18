@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
+	"strconv"
 	"strings"
 	"time"
 
@@ -13,7 +14,15 @@ import (
 )
 
 func main() {
-	execute()
+	fmt.Println("Enter search query: ")
+	var query string
+	fmt.Scanln(&query)
+
+	fmt.Println("Enter webhookURL: ")
+	var hook string
+	fmt.Scanln(&hook)
+
+	Monitor(query, hook)
 }
 
 type nordstrom_data struct {
@@ -51,7 +60,7 @@ func GetNumItems(body string) int {
 	return data.Search_cluster.Num_found
 }
 
-func Monitor(request string) {
+func Monitor(request string, hook string) {
 	monitor := true
 
 	default_endpoint := "https://www.nordstromrack.com/api/search2/catalog/search?query="
@@ -60,13 +69,20 @@ func Monitor(request string) {
 
 	full_query := default_endpoint + query
 
+	num_items := 0
+
 	for {
 
 		json1 := GetRequest(full_query)
 
-		fmt.Println(GetNumItems(json1))
+		if GetNumItems(json1) != num_items {
+			num_items = GetNumItems(json1)
+
+			execute(num_items, hook)
+		}
 
 		time.Sleep(5000 * time.Millisecond)
+		fmt.Println("Working")
 
 		if monitor == false {
 			break
@@ -82,25 +98,22 @@ func CreateWebhook(webhookURL string) (*discordhook.WebhookAPI, error) {
 	return discordhook.NewWebhookAPI(flake, token, true, nil)
 }
 
-func execute() {
-	wa, err := CreateWebhook("discord webhookurl here")
+func execute(numItems int, webhookURL string) {
+	hook, err := CreateWebhook(webhookURL)
 	if err != nil {
 		panic(err)
 	}
 
-	wh, err := wa.Get(nil)
+	wh, err := hook.Get(nil)
 	if err != nil {
 		panic(err)
 	}
 
-	fmt.Println(wh.Name)
-
-	msg, err := wa.Execute(nil, &discordhook.WebhookExecuteParams{
-		Content: "Example text",
+	msg, err := hook.Execute(nil, &discordhook.WebhookExecuteParams{
 		Embeds: []*discordhook.Embed{
 			{
-				Title:       "Hi there",
-				Description: "This is description",
+				Title:       "Items on page",
+				Description: strconv.Itoa(numItems),
 			},
 		},
 	}, nil, "")
@@ -109,13 +122,5 @@ func execute() {
 	}
 
 	fmt.Println(msg.ID)
-
-	wh, err = wa.Modify(nil, &discordhook.WebhookModifyParams{
-		Name: "This is a new default webhook name",
-	})
-	if err != nil {
-		panic(err)
-	}
-
 	fmt.Println(wh)
 }
