@@ -8,54 +8,14 @@ import (
 	"strings"
 	"time"
 
+	"github.com/andersfylling/snowflake"
 	"github.com/nickname32/discordhook"
 )
 
 func main() {
-	fmt.Println("here")
-	wa, err := discordhook.NewWebhookAPI(sample, "smple-FY", true, nil)
-	if err != nil {
-		panic(err)
-	}
-
-	wh, err := wa.Get(nil)
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(wh.Name)
-
-	msg, err := wa.Execute(nil, &discordhook.WebhookExecuteParams{
-		Content: "Example text",
-		Embeds: []*discordhook.Embed{
-			{
-				Title:       "Hi there",
-				Description: "This is description",
-			},
-		},
-	}, nil, "")
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(msg.ID)
-
-	wh, err = wa.Modify(nil, &discordhook.WebhookModifyParams{
-		Name: "This is a new default webhook name",
-	})
-	if err != nil {
-		panic(err)
-	}
-
-	fmt.Println(wh)
-
-	err = wa.Delete(nil)
-	if err != nil {
-		panic(err)
-	}
+	execute()
 }
 
-//webhook https://discord.com/api/webhooks//
 type nordstrom_data struct {
 	Search_cluster struct {
 		Num_found int `json:"num_found"`
@@ -112,4 +72,50 @@ func Monitor(request string) {
 			break
 		}
 	}
+}
+
+func CreateWebhook(webhookURL string) (*discordhook.WebhookAPI, error) {
+	split := strings.Split(webhookURL, "/")
+	flake := snowflake.ParseSnowflakeString(split[5])
+	token := split[6]
+
+	return discordhook.NewWebhookAPI(flake, token, true, nil)
+}
+
+func execute() {
+	wa, err := CreateWebhook("discord webhookurl here")
+	if err != nil {
+		panic(err)
+	}
+
+	wh, err := wa.Get(nil)
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(wh.Name)
+
+	msg, err := wa.Execute(nil, &discordhook.WebhookExecuteParams{
+		Content: "Example text",
+		Embeds: []*discordhook.Embed{
+			{
+				Title:       "Hi there",
+				Description: "This is description",
+			},
+		},
+	}, nil, "")
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(msg.ID)
+
+	wh, err = wa.Modify(nil, &discordhook.WebhookModifyParams{
+		Name: "This is a new default webhook name",
+	})
+	if err != nil {
+		panic(err)
+	}
+
+	fmt.Println(wh)
 }
